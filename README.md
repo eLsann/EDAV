@@ -16,9 +16,15 @@ Untuk memvisualisasikan secara lebih jelas bagaimana algoritma ini mengambil kep
 | :---: | :---: | :---: | :--- | :--- |
 | **t = 1** | ![A1](img/face_A1.jpg) | ![B1](img/face_B1.jpg) | 🪫 **Keyakinan: 65%** <br>*(Batas Aman: 95%)* | ❌ **Bukti Kurang** <br>*(Sistem menolak untuk mengambil keputusan, lanjut ekstrak frame berikutnya)* |
 | **t = 2** | ![A2](img/face_A2.jpg) | ![B2](img/face_B2.jpg) | 🔋 **Keyakinan: 82%** <br>*(Batas Aman: 95%)* | ⚠️ **Hampir Yakin** <br>*(Risiko salah tebak masih ada, lanjut ekstrak frame berikutnya)* |
-| **t = 3** | ![A3](img/face_A3.jpg) | ![B3](img/face_B3.jpg) | 💯 **Keyakinan: 98%** <br>*(Melampaui 95%)* | ✅ **BUKTI CUKUP!** <br>*(Verifikasi dihentikan lebih awal! Bukti sudah valid)* |
+| **t = 3** | ![A3](img/face_A3.jpg) | ![B3](img/face_B3.jpg) | 💯 **Keyakinan: 98%** <br>*(Melampaui 95%)* | ✅ **BUKTI CUKUP!** <br>*(Verifikasi dihentikan lebih awal! Wajah diyakini SAMA)* |
 
-*Tabel di atas mendemonstrasikan kekuatan utama EDAV: sistem tidak membuang-buang komputasi dengan memproses seluruh isi video, melainkan berhenti secara dinamis (misal pada frame ke-3) tepat ketika bukti sudah dianggap sahih.*
+*Tabel di atas mendemonstrasikan kekuatan utama EDAV pada skenario **Positif (Match)**: sistem tidak membuang-buang komputasi dengan memproses seluruh isi video, melainkan berhenti secara dinamis (misal pada frame ke-3) tepat ketika bukti sudah dianggap sahih.*
+
+### Mekanisme Penolakan (Impostor / Mismatch)
+
+Lalu, bagaimana jika sistem menghadapi wajah yang berbeda (Impostor)? EDAV memiliki mekanisme pencegahan komputasi berlebih:
+- Jika tingkat keyakinan terus-menerus meragukan (misalnya stagnan di bawah 50%) dan tidak mampu menembus batas aman 95% hingga batas jumlah *frame* maksimal ($t = N_{max}$) tercapai, maka sistem akan berhenti berburu bukti dan seketika mengeluarkan keputusan **MENOLAK (Reject)**.
+- **Alasan Penolakan:** Kurangnya akumulasi bukti kemiripan yang solid dalam jendela waktu (jumlah *frame*) yang telah diizinkan. Sistem menganggap risiko menyimpulkan bahwa wajah tersebut sama terlalu tinggi, sehingga menolak akses demi keamanan.
 
 ### 2. Alur Verifikasi Sekuensial (Fase Runtime)
 
