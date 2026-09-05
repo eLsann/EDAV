@@ -1,54 +1,54 @@
 # Evidence-Driven Adaptive Verification (EDAV)
 
-Repositori ini berisi **implementasi inti** dari kerangka kerja *Evidence-Driven Adaptive Verification* (EDAV). EDAV adalah sebuah protokol pengambilan keputusan sekuensial yang dirancang untuk secara dinamis mengoptimalkan kedalaman komputasi (jumlah *frame* yang diproses) pada sistem verifikasi wajah, berdasarkan tingkat keyakinan (*confidence*) skor kemiripan secara *real-time*.
+Implementasi inti dari kerangka kerja *Evidence-Driven Adaptive Verification* (EDAV) disertakan di dalam repositori ini. EDAV merupakan sebuah protokol pengambilan keputusan sekuensial yang dirancang agar kedalaman komputasi (jumlah *frame* yang diproses) pada sistem verifikasi wajah dapat dioptimalkan secara dinamis, berdasarkan pada tingkat keyakinan (*confidence*) dari skor kemiripan yang dihitung secara *real-time*.
 
 ## Arsitektur Sistem
 
-Diagram di bawah ini mengilustrasikan alur kerja dari protokol EDAV, mulai dari ekstraksi bingkai (*frame*) mentah hingga keputusan pemberhentian awal secara dinamis menggunakan *backward induction*:
+Alur kerja dari protokol EDAV, mulai dari ekstraksi bingkai (*frame*) mentah hingga keputusan pemberhentian awal secara dinamis menggunakan *backward induction*, diilustrasikan oleh diagram di bawah ini:
 
 ![Arsitektur EDAV](edav_architecture.png)
 
 ### 1. Pemrosesan Bingkai Sekuensial (Simulasi Nyata)
 
-Untuk memvisualisasikan secara lebih jelas bagaimana algoritma ini mengambil keputusan, perhatikan tabel eksekusi sekuensial di bawah ini. Pada setiap penambahan *frame* (langkah $t$), sistem akan mengakumulasi bukti kemiripan wajah hingga tingkat keyakinannya melampaui batas aman (95%).
+Agar proses pengambilan keputusan oleh algoritma ini dapat divisualisasikan dengan lebih jelas, tabel eksekusi sekuensial di bawah ini disertakan sebagai rujukan. Pada setiap penambahan *frame* (langkah $t$), bukti kemiripan wajah akan diakumulasi oleh sistem hingga batas aman (95%) berhasil dilampaui oleh tingkat keyakinannya.
 
 | Langkah (t) | Bingkai Target | Bingkai Probe | Akumulasi Bukti | Keputusan Sistem |
 | :---: | :---: | :---: | :--- | :--- |
-| **t = 1** | ![A1](img/face_A1.jpg) | ![B1](img/face_B1.jpg) | 🪫 **Keyakinan: 65%** <br>*(Batas Aman: 95%)* | ❌ **Bukti Kurang** <br>*(Sistem menolak untuk mengambil keputusan, lanjut ekstrak frame berikutnya)* |
-| **t = 2** | ![A2](img/face_A2.jpg) | ![B2](img/face_B2.jpg) | 🔋 **Keyakinan: 82%** <br>*(Batas Aman: 95%)* | ⚠️ **Hampir Yakin** <br>*(Risiko salah tebak masih ada, lanjut ekstrak frame berikutnya)* |
-| **t = 3** | ![A3](img/face_A3.jpg) | ![B3](img/face_B3.jpg) | 💯 **Keyakinan: 98%** <br>*(Melampaui 95%)* | ✅ **BUKTI CUKUP!** <br>*(Verifikasi dihentikan lebih awal! Wajah diyakini SAMA)* |
+| **t = 1** | ![A1](img/face_A1.jpg) | ![B1](img/face_B1.jpg) | 🪫 **Keyakinan: 65%** <br>*(Batas Aman: 95%)* | ❌ **Bukti Kurang** <br>*(Keputusan ditolak untuk diambil, ekstraksi frame berikutnya dilanjutkan)* |
+| **t = 2** | ![A2](img/face_A2.jpg) | ![B2](img/face_B2.jpg) | 🔋 **Keyakinan: 82%** <br>*(Batas Aman: 95%)* | ⚠️ **Hampir Yakin** <br>*(Risiko salah tebak dinilai masih ada, ekstraksi frame berikutnya dilanjutkan)* |
+| **t = 3** | ![A3](img/face_A3.jpg) | ![B3](img/face_B3.jpg) | 💯 **Keyakinan: 98%** <br>*(Melampaui 95%)* | ✅ **BUKTI CUKUP!** <br>*(Verifikasi dihentikan lebih awal! Bukti diyakini sudah valid)* |
 
-*Tabel di atas mendemonstrasikan kekuatan utama EDAV pada skenario **Positif (Match)**: sistem tidak membuang-buang komputasi dengan memproses seluruh isi video, melainkan berhenti secara dinamis (misal pada frame ke-3) tepat ketika bukti sudah dianggap sahih.*
+*Kekuatan utama EDAV didemonstrasikan oleh tabel di atas pada skenario **Positif (Match)**: komputasi tidak dibuang secara sia-sia untuk memproses seluruh isi video, melainkan eksekusi dihentikan secara dinamis (misal pada frame ke-3) tepat pada saat bukti telah dianggap sahih oleh sistem.*
 
 ### Mekanisme Penolakan (Impostor / Mismatch)
 
-Lalu, bagaimana jika sistem menghadapi wajah yang berbeda (Impostor)? EDAV memiliki mekanisme pencegahan komputasi berlebih:
-- Jika tingkat keyakinan terus-menerus meragukan (misalnya stagnan di bawah 50%) dan tidak mampu menembus batas aman 95% hingga batas jumlah *frame* maksimal ($t = N_{max}$) tercapai, maka sistem akan berhenti berburu bukti dan seketika mengeluarkan keputusan **MENOLAK (Reject)**.
-- **Alasan Penolakan:** Kurangnya akumulasi bukti kemiripan yang solid dalam jendela waktu (jumlah *frame*) yang telah diizinkan. Sistem menganggap risiko menyimpulkan bahwa wajah tersebut sama terlalu tinggi, sehingga menolak akses demi keamanan.
+Lalu, bagaimana jika wajah yang berbeda (Impostor) dihadapi oleh sistem? Mekanisme pencegahan komputasi berlebih telah disematkan pada EDAV:
+- Jika tingkat keyakinan terus-menerus terpantau meragukan (misalnya stagnan di bawah 50%) dan batas aman 95% tidak mampu ditembus hingga batas jumlah *frame* maksimal ($t = N_{max}$) tercapai, maka perburuan bukti akan dihentikan dan keputusan **MENOLAK (Reject)** akan seketika dikeluarkan oleh sistem.
+- **Alasan Penolakan:** Kurangnya akumulasi bukti kemiripan yang solid di dalam jendela waktu (jumlah *frame*) yang telah diizinkan. Risiko dari penyimpulan bahwa wajah tersebut sama dianggap terlalu tinggi oleh sistem, sehingga akses ditolak demi alasan keamanan.
 
 ### 2. Alur Verifikasi Sekuensial (Fase Runtime)
 
-Bagan alir (*flowchart*) ini memvisualisasikan proses keputusan dinamis pada saat sistem berjalan (*runtime*). Berbeda dengan metode dasar yang menggunakan jumlah *frame* tetap (*fixed-depth baseline*), EDAV mengevaluasi bukti secara bertahap dan berhenti tepat pada saat tingkat keyakinan telah melampaui batas risiko yang dapat diterima.
+Proses keputusan dinamis pada saat sistem dijalankan (*runtime*) divisualisasikan melalui bagan alir (*flowchart*) berikut. Berbeda dengan metode dasar yang menggunakan jumlah *frame* tetap (*fixed-depth baseline*), bukti dievaluasi secara bertahap oleh EDAV, dan pemrosesan akan dihentikan secara presisi pada saat batas risiko yang dapat diterima telah dilampaui oleh tingkat keyakinan.
 
 ```mermaid
 graph TD
-    A[Mulai: Muat Pasangan Video] --> B[t = 1]
-    B --> C[Ekstrak Frame t]
-    C --> D[Penyelarasan Wajah MTCNN]
-    D --> E[Ekstraksi Fitur InceptionResNetV1]
-    E --> F[Hitung Cosine Similarity]
-    F --> G[Kalibrasi Platt Scaling]
+    A[Mulai: Pasangan Video Dimuat] --> B[t = 1]
+    B --> C[Frame t Diekstrak]
+    C --> D[Penyelarasan Wajah MTCNN Dilakukan]
+    D --> E[Fitur InceptionResNetV1 Diekstraksi]
+    E --> F[Cosine Similarity Dihitung]
+    F --> G[Kalibrasi Platt Scaling Diterapkan]
     G --> H{Apakah Risiko L_stop < Q_continue?}
-    H -- Ya --> I[BERHENTI: Keluarkan Keputusan]
+    H -- Ya --> I[BERHENTI: Keputusan Dikeluarkan]
     H -- Tidak --> J{Apakah t == N_max?}
-    J -- Tidak --> K[t = t + 1]
+    J -- Tidak --> K[t = ditambahkan 1]
     K --> C
     J -- Ya --> I
 ```
 
 ### 3. Kebijakan Backward Induction (Fase Pelatihan)
 
-Sebelum sistem dijalankan, kebijakan keputusan (Tabel Risiko $Q$) dibangun dari arah belakang, dimulai dari kedalaman maksimum ($t=N$). Diagram status berikut menunjukkan bagaimana ekspektasi kerugian di masa depan ditarik mundur untuk menciptakan kebijakan pemberhentian awal yang paling optimal.
+Sebelum sistem dijalankan, kebijakan keputusan (Tabel Risiko $Q$) dibangun dari arah belakang, yakni dimulai dari kedalaman maksimum ($t=N$). Diagram status berikut menunjukkan bagaimana ekspektasi kerugian di masa depan ditarik mundur agar kebijakan pemberhentian awal yang paling optimal dapat diciptakan.
 
 ```mermaid
 stateDiagram-v2
@@ -58,9 +58,9 @@ stateDiagram-v2
     state "State t=2" as T2
     state "State Awal (t=1)" as T1
 
-    N --> N1 : Propagasi min(L_stop, Q_cont)
+    N --> N1 : min(L_stop, Q_cont) Dipropagasi
     N1 --> T2 : ...
-    T2 --> T1 : Hitung Q_cont untuk t=1
+    T2 --> T1 : Q_cont untuk t=1 Dihitung
     
     note right of N: Q_cont = ∞ (Wajib Berhenti)
     note right of N1: Q_cont = E[L_next | s_t]
@@ -69,16 +69,16 @@ stateDiagram-v2
 
 ## Struktur Inti Repositori
 
-Repositori ini telah disederhanakan hingga hanya menyisakan komponen-komponen inti agar fokus murni pada algoritma:
+Repositori ini telah disederhanakan hingga hanya menyisakan komponen-komponen inti agar algoritma dapat dijadikan fokus utama:
 
-- **`experiments/edav_main.py`**: Skrip utama dan satu-satunya untuk eksekusi. Skrip ini menjalankan protokol EDAV secara utuh (evaluasi 10-fold CV tanpa kebocoran data, pelacakan *state*, dan pengambilan keputusan sekuensial).
-- **`src/`**: Modul sumber inti yang menggerakkan algoritma:
-  - `sampling/`: Pemilihan *frame* secara deterministik.
-  - `detection/`: Pendeteksian kotak wajah dan penyelarasan (*alignment*) berbasis MTCNN.
-  - `embedding/`: Ekstraksi fitur menggunakan model *pre-trained* InceptionResNetV1.
-  - `similarity/`: Perhitungan matriks *pairwise cosine similarity*.
-  - `calibration/`: Pemetaan nilai *similarity* menjadi nilai tingkat keyakinan yang akurat (*Platt Scaling*).
-- **`ytf_loader.py` & `read_mat_file.py`**: Modul pembantu untuk mengurai dan membaca struktur dataset YouTube Faces (YTF).
+- **`experiments/edav_main.py`**: Skrip utama dan satu-satunya untuk eksekusi. Protokol EDAV secara utuh dijalankan oleh skrip ini (evaluasi 10-fold CV tanpa kebocoran data, pelacakan *state*, dan pengambilan keputusan sekuensial).
+- **`src/`**: Modul sumber inti yang digunakan untuk menggerakkan algoritma:
+  - `sampling/`: *Frame* dipilih secara deterministik.
+  - `detection/`: Kotak wajah dideteksi dan diselaraskan (*alignment*) berbasis MTCNN.
+  - `embedding/`: Fitur diekstraksi menggunakan model *pre-trained* InceptionResNetV1.
+  - `similarity/`: Matriks *pairwise cosine similarity* dihitung.
+  - `calibration/`: Nilai *similarity* dipetakan menjadi nilai tingkat keyakinan yang akurat (*Platt Scaling*).
+- **`ytf_loader.py` & `read_mat_file.py`**: Modul pembantu yang disediakan agar struktur dataset YouTube Faces (YTF) dapat diurai dan dibaca.
 
 ## Kebutuhan Sistem (Dependencies)
 
@@ -88,18 +88,18 @@ Repositori ini telah disederhanakan hingga hanya menyisakan komponen-komponen in
 
 ## Persiapan Dataset
 
-Dataset mentah **tidak disertakan** di dalam repositori ini karena ukuran filenya yang sangat besar. Untuk menjalankan implementasi inti ini di komputer Anda, Anda harus mengunduh dataset YouTube Faces (YTF) dan meletakkannya di dalam direktori `dataset ytf/` pada folder utama (*root*) proyek.
+Dataset mentah **tidak disertakan** di dalam repositori ini dikarenakan oleh ukuran filenya yang terlampau besar. Agar implementasi inti ini dapat dijalankan di komputer lokal Anda, dataset YouTube Faces (YTF) diwajibkan untuk diunduh dan diletakkan di dalam direktori `dataset ytf/` pada folder utama (*root*) proyek.
 
-Arsip yang dibutuhkan:
+Arsip yang dibutuhkan untuk diekstrak:
 - `frame_images_DB.tar.gz`
 - `headpose_DB.tar.gz`
 - `meta_data.tar.gz`
 
 ## Menjalankan Protokol
 
-Eksekusi protokol utama EDAV melalui terminal/Command Prompt:
+Protokol utama EDAV dapat dieksekusi melalui terminal/Command Prompt menggunakan perintah berikut:
 
 ```bash
 python experiments/edav_main.py
 ```
-*(Pastikan seluruh kebutuhan sistem telah diinstal dan dataset telah diekstrak dengan benar sebelum mengeksekusi perintah di atas).*
+*(Seluruh kebutuhan sistem diwajibkan untuk diinstal dan dataset dipastikan telah diekstrak dengan benar sebelum perintah di atas dieksekusi).*
